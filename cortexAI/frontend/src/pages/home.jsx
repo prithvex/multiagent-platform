@@ -1,23 +1,23 @@
 import React from "react";
 import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "../utils/firebase";
-import api from "../utils/axios";
+import { auth, googleProvider } from "../../utils/firebase";
+import api from "../../utils/axios";
 import { useDispatch, useSelector } from "react-redux";
-import { setUsetdata } from "../redux/user";
+import { setUserData } from "../redux/userSlice";
 
 function Home() {
 
   // accessing the data in user state 
-  const {userData} = useSelector(state => state.user)
+  const { userData } = useSelector(state => state.user)
   const dispatch = useDispatch()
   console.log(userData)
   // Send Firebase ID token to backend
   const handleLogin = async (token) => {
     try {
-      const { data } = await api.post("/api/auth/login", {token});
+      const { data } = await api.post("/api/auth/login", { token });
 
       dispatch(setUsetdata(data))
-      
+
     } catch (error) {
       console.error(
         "Backend login failed:",

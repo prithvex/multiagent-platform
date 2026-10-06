@@ -5,6 +5,7 @@ import dns from "node:dns/promises";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import protect from "./middleware/auth.middleware.js";
+import getCurrentUser from "./controllers/user.cotroller.js";
 dotenv.config();
 
 // Use Cloudflare and Google DNS
