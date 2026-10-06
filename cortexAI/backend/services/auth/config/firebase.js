@@ -1,9 +1,8 @@
-import {cert, initializeApp} from firebase-admin;
+import { cert, initializeApp } from "firebase-admin/app";
+import serviceAccount from "../cortexai-firebase-key.json" with { type: "json" };
 
-import serviceAccount from "../cortexai-firebase-key.json" with {type:"json"};
-
-const app= admin.initializeApp({
-  credential: cert(serviceAccount)
+const app = initializeApp({
+  credential: cert(serviceAccount),
 });
 
-export default app 
+export default app;
