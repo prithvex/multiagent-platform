@@ -4,6 +4,7 @@ import proxy from "express-http-proxy";
 import dns from "node:dns/promises";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import protect from "./middleware/auth.middleware.js";
 dotenv.config();
 
 // Use Cloudflare and Google DNS
@@ -21,7 +22,9 @@ app.use(cors({
 app.use(cookieParser())
 
 // Proxy /auth requests to the auth service
-app.use("/auth", proxy(process.env.AUTH_SERVICE));
+app.use("/api/auth", proxy(process.env.AUTH_SERVICE));
+
+app.get("/api/me", protect, getCurrentUser)
 
 app.get("/", (req, res) => {
   res.json({ message: "Hello from Gateway" });

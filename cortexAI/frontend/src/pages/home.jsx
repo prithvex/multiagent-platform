@@ -2,16 +2,22 @@ import React from "react";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../utils/firebase";
 import api from "../utils/axios";
+import { useDispatch, useSelector } from "react-redux";
+import { setUsetdata } from "../redux/user";
 
-function App() {
+function Home() {
+
+  // accessing the data in user state 
+  const {userData} = useSelector(state => state.user)
+  const dispatch = useDispatch()
+  console.log(userData)
   // Send Firebase ID token to backend
   const handleLogin = async (token) => {
     try {
-      const { data } = await api.post("/auth/login", {
-        token,
-      });
+      const { data } = await api.post("/api/auth/login", {token});
 
-      console.log("Backend response:", data);
+      dispatch(setUsetdata(data))
+      
     } catch (error) {
       console.error(
         "Backend login failed:",
@@ -40,7 +46,8 @@ function App() {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm text-center">
+      {/* show login popup only when there is no user data  */}
+      {!userData && <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm text-center">
         <h1 className="text-2xl font-bold text-gray-800 mb-2">
           Welcome Back
         </h1>
@@ -55,9 +62,10 @@ function App() {
         >
           Continue with Google
         </button>
-      </div>
+      </div>}
+
     </div>
   );
 }
 
-export default App;
+export default Home;

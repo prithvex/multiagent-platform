@@ -1,0 +1,15 @@
+import api from "../../utils/axios"
+
+// fetch the current user 
+const getCurrentUser= async () =>{
+    try{
+        const {data} = await api.get("/api/me")
+        return data 
+
+    }catch(error){
+        console.log(error)
+        return null
+    }
+}
+
+export default getCurrentUser 
