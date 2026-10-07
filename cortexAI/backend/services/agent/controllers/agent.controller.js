@@ -9,12 +9,7 @@ export const agent = async (req, res) => {
             return res.status(400).json({ message: "Prompt is required" })
         }
 
-        // add all messages into redis 
-        await addMessage(conversationId, {
-            role: "user",
-            content: prompt,
 
-        })
 
 
         // Save user message to chat service if conversationId is provided
@@ -43,6 +38,13 @@ export const agent = async (req, res) => {
         //     content: response,
 
         // })
+
+        // add all messages into redis 
+        await addMessage(conversationId, {
+            role: "user",
+            content: prompt,
+
+        })
 
         // Save assistant message to chat service if conversationId is provided
         if (conversationId && conversationId !== "default-conv") {
