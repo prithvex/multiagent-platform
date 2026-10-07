@@ -1,9 +1,16 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { getMessages } from "../features/getMessages";
 import { sendAgentMessage } from "../features/sendAgentMessage";
 import { updateConversation } from "../features/updateConversation";
-import { updateConversationTitle } from "../redux/conversationSlice";
+import { createconversation } from "../features/createConversation";
+import {
+  updateConversationTitle,
+  addConversation,
+  setSelectedConversation,
+} from "../redux/conversationSlice";
 import {
   ArrowUp,
   Globe,
@@ -21,7 +28,7 @@ import {
   Cpu,
 } from "lucide-react";
 
-// Helper to extract code blocks from markdown responses
+// Helper to extract component code for default canvas selection
 const extractArtifact = (text) => {
   if (!text) return null;
   const match = text.match(/```(?:jsx|tsx|javascript|js|html)?\n([\s\S]*?)```/);
@@ -39,6 +46,91 @@ const extractArtifact = (text) => {
     };
   }
   return null;
+};
+
+// Custom CodeBlock rendered by ReactMarkdown
+const CodeBlock = ({
+  language,
+  code,
+  onSelectArtifact,
+  onToggleArtifact,
+  isArtifactOpen,
+}) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const isUIArtifact =
+    ["jsx", "tsx", "javascript", "js", "html"].includes(
+      (language || "").toLowerCase()
+    ) ||
+    code.includes("import React") ||
+    code.includes("export default function") ||
+    (code.includes("const ") && code.includes("return ("));
+
+  const handleOpenCanvas = () => {
+    let title = "ComponentArtifact.jsx";
+    const compMatch = code.match(/function\s+([A-Za-z0-9_]+)|const\s+([A-Za-z0-9_]+)\s*=/);
+    if (compMatch) {
+      title = `${compMatch[1] || compMatch[2]}.jsx`;
+    }
+    if (onSelectArtifact) {
+      onSelectArtifact({
+        title,
+        language: language || "jsx",
+        code,
+      });
+    }
+    if (!isArtifactOpen && onToggleArtifact) {
+      onToggleArtifact();
+    }
+  };
+
+  return (
+    <div className="my-3 rounded-xl border border-[#2d2d2d] bg-[#121212] overflow-hidden shadow-lg">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[#1b1b1b] border-b border-[#262626] text-xs text-[#8e8e8e]">
+        <span className="font-mono text-[11px] text-[#a1a1aa] lowercase">
+          {language || "code"}
+        </span>
+        <div className="flex items-center gap-1.5">
+          {isUIArtifact && (
+            <button
+              onClick={handleOpenCanvas}
+              title="Preview in Canvas"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#252525] hover:bg-[#303030] text-[#ececec] text-[11px] font-medium transition cursor-pointer border border-[#333333]"
+            >
+              <span>Canvas</span>
+              <ExternalLink className="w-3 h-3 text-[#a1a1aa]" />
+            </button>
+          )}
+          <button
+            onClick={handleCopyCode}
+            title="Copy code"
+            className="flex items-center gap-1 px-2 py-0.5 rounded-md hover:bg-[#252525] text-[#a1a1aa] hover:text-white text-[11px] transition cursor-pointer"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3 h-3 text-white" />
+                <span className="text-white">Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3 h-3" />
+                <span>Copy</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+      <pre className="p-3.5 overflow-x-auto text-[11px] sm:text-xs font-mono leading-relaxed text-[#e4e4e7] custom-scrollbar">
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
 };
 
 const ChatArea = ({
@@ -131,7 +223,29 @@ const ChatArea = ({
         setStatusMessage("Agent specialist synthesizing response...");
       }, 1200);
 
-      const response = await sendAgentMessage(promptWithMode, conversationId || "default-conv");
+      // Lazily create conversation if this is a fresh chat
+      let activeConvId = conversationId;
+      if (!activeConvId) {
+        const smartTitle =
+          rawText.length > 28 ? `${rawText.substring(0, 26)}...` : rawText;
+        try {
+          const newConv = await createconversation();
+          if (newConv) {
+            newConv.title = smartTitle;
+            activeConvId = newConv._id || newConv.id;
+            dispatch(addConversation(newConv));
+            dispatch(setSelectedConversation(newConv));
+            await updateConversation(activeConvId, smartTitle);
+          }
+        } catch (createErr) {
+          console.error("Failed to create conversation:", createErr);
+        }
+      }
+
+      const response = await sendAgentMessage(
+        promptWithMode,
+        activeConvId || "default-conv"
+      );
       clearTimeout(statusTimer);
 
       const replyContent =
@@ -154,7 +268,9 @@ const ChatArea = ({
 
       if (
         conversationId &&
-        (!selectedConversation.title || selectedConversation.title === "New Chat" || selectedConversation.title === "New chat")
+        (!selectedConversation.title ||
+          selectedConversation.title === "New Chat" ||
+          selectedConversation.title === "New chat")
       ) {
         const smartTitle =
           rawText.length > 28 ? `${rawText.substring(0, 26)}...` : rawText;
@@ -223,11 +339,123 @@ const ChatArea = ({
     },
   ];
 
+  // Custom markdown component overrides for ChatGPT-style typography
+  const markdownComponents = {
+    code({ node, inline, className, children, ...props }) {
+      const match = /language-(\w+)/.exec(className || "");
+      const codeString = String(children).replace(/\n$/, "");
+      const isMultiline = codeString.includes("\n") || Boolean(match);
+
+      if (isMultiline) {
+        return (
+          <CodeBlock
+            language={match ? match[1] : ""}
+            code={codeString}
+            onSelectArtifact={onSelectArtifact}
+            onToggleArtifact={onToggleArtifact}
+            isArtifactOpen={isArtifactOpen}
+          />
+        );
+      }
+      return (
+        <code
+          className="bg-[#262626] text-[#e4e4e7] px-1.5 py-0.5 rounded font-mono text-[11px] sm:text-xs border border-[#333333]"
+          {...props}
+        >
+          {children}
+        </code>
+      );
+    },
+    pre({ children }) {
+      return <div className="my-2">{children}</div>;
+    },
+    p({ children }) {
+      return <p className="mb-2.5 last:mb-0 leading-relaxed">{children}</p>;
+    },
+    ul({ children }) {
+      return <ul className="list-disc pl-5 mb-2.5 space-y-1">{children}</ul>;
+    },
+    ol({ children }) {
+      return <ol className="list-decimal pl-5 mb-2.5 space-y-1">{children}</ol>;
+    },
+    li({ children }) {
+      return <li className="leading-relaxed">{children}</li>;
+    },
+    h1({ children }) {
+      return (
+        <h1 className="text-base sm:text-lg font-bold text-white mt-4 mb-2 first:mt-0 tracking-tight">
+          {children}
+        </h1>
+      );
+    },
+    h2({ children }) {
+      return (
+        <h2 className="text-sm sm:text-base font-semibold text-white mt-3.5 mb-1.5 first:mt-0 tracking-tight">
+          {children}
+        </h2>
+      );
+    },
+    h3({ children }) {
+      return (
+        <h3 className="text-xs sm:text-sm font-semibold text-white mt-2.5 mb-1 first:mt-0">
+          {children}
+        </h3>
+      );
+    },
+    blockquote({ children }) {
+      return (
+        <blockquote className="border-l-2 border-[#52525b] pl-3 my-2.5 italic text-[#a1a1aa]">
+          {children}
+        </blockquote>
+      );
+    },
+    table({ children }) {
+      return (
+        <div className="overflow-x-auto my-3 border border-[#2e2e2e] rounded-xl">
+          <table className="w-full text-left text-xs border-collapse">
+            {children}
+          </table>
+        </div>
+      );
+    },
+    thead({ children }) {
+      return <thead className="bg-[#202020] text-white">{children}</thead>;
+    },
+    th({ children }) {
+      return (
+        <th className="p-2.5 border-b border-[#2e2e2e] text-[#ececec] font-semibold text-xs">
+          {children}
+        </th>
+      );
+    },
+    td({ children }) {
+      return (
+        <td className="p-2.5 border-b border-[#262626] text-[#d4d4d8] text-xs">
+          {children}
+        </td>
+      );
+    },
+    a({ href, children }) {
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-white underline underline-offset-2 hover:text-[#d4d4d8] transition-colors"
+        >
+          {children}
+        </a>
+      );
+    },
+    hr() {
+      return <hr className="my-4 border-[#2a2a2a]" />;
+    },
+  };
+
   return (
     <main className="flex-1 h-full rounded-2xl border border-[#262626] bg-[#141414] p-3 flex flex-col justify-between overflow-hidden relative select-none shadow-2xl transition-all">
       {/* Top Header Bar */}
       <header className="h-10 rounded-xl border border-[#262626] bg-[#1c1c1c] px-3 flex items-center justify-between text-xs text-[#a1a1aa] shrink-0">
-        {/* Left Side: Sidebar Toggle (when closed) + New Chat + Model/Thread Title */}
         <div className="flex items-center gap-2 min-w-0">
           {!isSidebarOpen && (
             <div className="flex items-center gap-1 shrink-0 mr-1">
@@ -264,11 +492,10 @@ const ChatArea = ({
           <button
             onClick={onToggleArtifact}
             title="Toggle Canvas"
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition cursor-pointer ${
-              isArtifactOpen
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition cursor-pointer ${isArtifactOpen
                 ? "bg-[#282828] border-[#404040] text-white shadow-sm"
                 : "bg-[#202020] border-[#2e2e2e] text-[#a1a1aa] hover:text-white hover:bg-[#262626]"
-            }`}
+              }`}
           >
             <PanelRight className="w-3.5 h-3.5" />
             <span>Canvas</span>
@@ -326,11 +553,10 @@ const ChatArea = ({
                 className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`rounded-2xl border px-4 py-3 text-xs sm:text-sm leading-relaxed transition ${
-                    isUser
+                  className={`rounded-2xl border px-4 py-3 text-xs sm:text-sm leading-relaxed transition ${isUser
                       ? "bg-[#282828] border-[#383838] text-[#f4f4f5] ml-auto max-w-[82%] sm:max-w-[70%] shadow-sm"
-                      : "bg-[#1c1c1c] border-[#282828] text-[#d4d4d8] mr-auto max-w-[88%] sm:max-w-[78%] shadow-sm"
-                  }`}
+                      : "bg-[#1c1c1c] border-[#282828] text-[#d4d4d8] mr-auto max-w-[92%] sm:max-w-[82%] shadow-sm"
+                    }`}
                 >
                   {/* Assistant agent badge */}
                   {!isUser && (
@@ -342,30 +568,19 @@ const ChatArea = ({
                     </div>
                   )}
 
-                  {/* Message content */}
-                  <div className="whitespace-pre-wrap font-sans text-xs sm:text-sm">
-                    {msg.content}
-                  </div>
-
-                  {/* Embedded Artifact Card */}
-                  {msg.artifact && (
-                    <div className="mt-3 pt-2.5 border-t border-[#262626] flex items-center justify-between gap-3 bg-[#151515] p-2.5 rounded-xl border border-[#282828]">
-                      <div className="flex items-center gap-2 text-xs text-[#a1a1aa] min-w-0">
-                        <Terminal className="w-3.5 h-3.5 text-white shrink-0" />
-                        <span className="font-mono text-[11px] text-white truncate">
-                          {msg.artifact.title}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => {
-                          if (onSelectArtifact) onSelectArtifact(msg.artifact);
-                          if (!isArtifactOpen && onToggleArtifact) onToggleArtifact();
-                        }}
-                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#242424] hover:bg-[#2e2e2e] border border-[#383838] text-[11px] font-medium text-white transition cursor-pointer shrink-0"
+                  {/* Message content formatted with ReactMarkdown & remarkGfm */}
+                  {isUser ? (
+                    <div className="whitespace-pre-wrap font-sans text-xs sm:text-sm">
+                      {msg.content}
+                    </div>
+                  ) : (
+                    <div className="prose prose-invert max-w-none text-xs sm:text-sm">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={markdownComponents}
                       >
-                        <span>Open Canvas</span>
-                        <ExternalLink className="w-3 h-3 text-[#a1a1aa]" />
-                      </button>
+                        {msg.content}
+                      </ReactMarkdown>
                     </div>
                   )}
 
@@ -415,11 +630,10 @@ const ChatArea = ({
               key={name}
               title={tooltip}
               onClick={() => setActiveChip(name)}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg border text-[11px] font-medium transition cursor-pointer shrink-0 ${
-                activeChip === name
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg border text-[11px] font-medium transition cursor-pointer shrink-0 ${activeChip === name
                   ? "bg-[#2a2a2a] border-[#404040] text-white shadow-sm"
                   : "bg-[#202020] border-[#2b2b2b] text-[#8e8e8e] hover:text-[#e4e4e7] hover:border-[#383838]"
-              }`}
+                }`}
             >
               <Icon className="w-3 h-3" />
               <span>{name}</span>
@@ -438,10 +652,10 @@ const ChatArea = ({
               activeChip === "Code"
                 ? "Describe code or architecture to generate..."
                 : activeChip === "Canvas"
-                ? "Describe an interactive React component to build..."
-                : activeChip === "Search"
-                ? "Ask a question for web synthesis..."
-                : "Ask CortexAI anything or assign a task..."
+                  ? "Describe an interactive React component to build..."
+                  : activeChip === "Search"
+                    ? "Ask a question for web synthesis..."
+                    : "Ask CortexAI anything or assign a task..."
             }
             className="flex-1 bg-[#222222] border border-[#2f2f2f] focus:border-[#4b4b4b] rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-[#71717a] focus:outline-none transition shadow-inner"
           />

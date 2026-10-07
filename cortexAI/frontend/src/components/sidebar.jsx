@@ -8,6 +8,7 @@ import {
 } from "../redux/conversationSlice";
 import api from "../../utils/axios";
 import { createconversation } from "../features/createConversation";
+import { deleteConversation } from "../features/deleteConversation";
 import {
   SquarePen,
   MessageSquare,
@@ -50,26 +51,20 @@ const Sidebar = ({
     }
   };
 
-  const handleCreateNewChat = async () => {
-    if (isCreatingChat) return;
-    setIsCreatingChat(true);
-    try {
-      const newConv = await createconversation();
-      if (newConv) {
-        dispatch(addConversation(newConv));
-        dispatch(setSelectedConversation(newConv));
-        if (onNewChat) onNewChat(newConv);
-      }
-    } catch (err) {
-      console.error("Failed to create conversation:", err);
-    } finally {
-      setIsCreatingChat(false);
-    }
+  const handleCreateNewChat = () => {
+    if (!selectedConversation) return;
+    dispatch(setSelectedConversation(null));
+    if (onNewChat) onNewChat();
   };
 
-  const handleDeleteChat = (e, chatId) => {
+  const handleDeleteChat = async (e, chatId) => {
     e.stopPropagation();
     dispatch(removeConversation(chatId));
+    try {
+      await deleteConversation(chatId);
+    } catch (err) {
+      console.error("Failed to delete conversation on server:", err);
+    }
   };
 
   const handleSelect = (conv) => {
@@ -79,11 +74,10 @@ const Sidebar = ({
 
   return (
     <aside
-      className={`h-full bg-[#171717] border border-[#262626] rounded-2xl flex flex-col justify-between select-none shrink-0 transition-all duration-300 ease-in-out shadow-2xl relative ${
-        isOpen
+      className={`h-full bg-[#171717] border border-[#262626] rounded-2xl flex flex-col justify-between select-none shrink-0 transition-all duration-300 ease-in-out shadow-2xl relative ${isOpen
           ? "w-64 sm:w-72 p-3 opacity-100 pointer-events-auto"
           : "w-0 p-0 m-0 border-0 opacity-0 pointer-events-none overflow-hidden"
-      }`}
+        }`}
     >
       {/* Top Header Row: Branding and Sidebar Close Toggle Button */}
       <div className="flex items-center justify-between mb-2.5 px-1">
@@ -156,17 +150,15 @@ const Sidebar = ({
                 <div
                   key={chatId}
                   onClick={() => handleSelect(chat)}
-                  className={`w-full px-3 py-2 rounded-lg text-xs transition cursor-pointer flex items-center justify-between group ${
-                    isSelected
+                  className={`w-full px-3 py-2 rounded-lg text-xs transition cursor-pointer flex items-center justify-between group ${isSelected
                       ? "bg-[#282828] text-white border border-[#383838] shadow-sm font-medium"
                       : "text-[#a1a1aa] hover:bg-[#212121] hover:text-[#ececec] border border-transparent"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2 truncate min-w-0">
                     <MessageSquare
-                      className={`w-3.5 h-3.5 shrink-0 transition-colors ${
-                        isSelected ? "text-white" : "text-[#71717a] group-hover:text-[#a1a1aa]"
-                      }`}
+                      className={`w-3.5 h-3.5 shrink-0 transition-colors ${isSelected ? "text-white" : "text-[#71717a] group-hover:text-[#a1a1aa]"
+                        }`}
                     />
                     <span className="truncate">{title}</span>
                   </div>

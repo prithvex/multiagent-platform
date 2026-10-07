@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import protect from "./middleware/auth.middleware.js";
 import getCurrentUser from "./controllers/user.cotroller.js";
 import { proxywithheader } from "./utils/proxyWithHeader.js";
+import morgan from "morgan";
 dotenv.config();
 
 // Use Cloudflare and Google DNS
@@ -20,6 +21,8 @@ app.use(cors({
   origin: process.env.FRONTEND_URL,
   credentials: true
 }))
+
+app.use(morgan("dev")) // now we see all our api's
 
 app.use(cookieParser())
 

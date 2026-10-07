@@ -13,7 +13,7 @@ const getGroq = () => {
         }
         groqInstance = new ChatGroq({
             apiKey: apiKey,
-            model: "llama-3.3-70b-versatile",
+            model: "openai/gpt-oss-120b",
             temperature: 0.2,
             maxRetries: 2,
         })
@@ -29,7 +29,7 @@ const getGemini = () => {
         }
         geminiInstance = new ChatGoogleGenerativeAI({
             apiKey: apiKey,
-            model: "gemini-2.0-flash",
+            model: "gemini-3.6-flash",
             temperature: 0.2,
             maxRetries: 2,
         })

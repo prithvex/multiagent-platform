@@ -75,6 +75,9 @@ export default function InteractiveCounter() {
           if (list && list.length > 0) {
             dispatch(setConversation(list));
             dispatch(setSelectedConversation(list[0]));
+          } else {
+            dispatch(setConversation([]));
+            dispatch(setSelectedConversation(null));
           }
         } catch (e) {
           console.error("Failed to load user conversations:", e);
@@ -84,16 +87,8 @@ export default function InteractiveCounter() {
     fetchConversations();
   }, [userData, dispatch]);
 
-  const handleCreateNewChat = async () => {
-    try {
-      const newConv = await createconversation();
-      if (newConv) {
-        dispatch(addConversation(newConv));
-        dispatch(setSelectedConversation(newConv));
-      }
-    } catch (err) {
-      console.error("Failed to create conversation:", err);
-    }
+  const handleCreateNewChat = () => {
+    dispatch(setSelectedConversation(null));
   };
 
   // Send Firebase ID token to backend

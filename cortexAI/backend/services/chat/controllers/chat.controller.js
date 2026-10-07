@@ -23,14 +23,43 @@ export const getConversation = async (req, res) => {
         const userId = req.headers["x-user-id"] || (typeof req.header === "function" ? req.header("x-user-id") : null)
         console.log("getConversation userId:", userId)
 
-        const conversation = await Conversation.find({
+        if (!userId) {
+            return res.status(200).json({ message: [] })
+        }
+
+        const allConversations = await Conversation.find({
             userId: userId
-        }).sort({ createdAt: -1 }).limit(20)
-        return res.status(200).json({ message: conversation })
+        }).sort({ createdAt: -1 })
+
+        // Filter and clean up empty abandoned conversations that have no messages
+        const validConversations = []
+        for (const conv of allConversations) {
+            const hasMessages = await Message.exists({ conversationId: conv._id })
+            if (hasMessages) {
+                validConversations.push(conv)
+            } else {
+                // Delete orphaned conversation with 0 messages from MongoDB
+                await Conversation.findByIdAndDelete(conv._id)
+            }
+        }
+
+        return res.status(200).json({ message: validConversations })
 
     } catch (error) {
         console.error("getConversation error:", error)
         return res.status(500).json({ message: `get conversation error ${error.message || error}` })
+    }
+}
+
+export const deleteConversation = async (req, res) => {
+    try {
+        const { conversationId } = req.params
+        await Conversation.findByIdAndDelete(conversationId)
+        await Message.deleteMany({ conversationId: conversationId })
+        return res.status(200).json({ message: "Conversation deleted successfully" })
+    } catch (error) {
+        console.error("deleteConversation error:", error)
+        return res.status(500).json({ message: `delete conversation error ${error.message || error}` })
     }
 }
 
