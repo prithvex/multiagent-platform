@@ -1,5 +1,6 @@
 import axios from "axios"
 import { graph } from "../graph/graph.js"
+import { addMessage } from "../config/memory.js"
 
 export const agent = async (req, res) => {
     try {
@@ -7,6 +8,14 @@ export const agent = async (req, res) => {
         if (!prompt) {
             return res.status(400).json({ message: "Prompt is required" })
         }
+
+        // add all messages into redis 
+        await addMessage(conversationId, {
+            role: "user",
+            content: prompt,
+
+        })
+
 
         // Save user message to chat service if conversationId is provided
         if (conversationId && conversationId !== "default-conv") {
@@ -27,6 +36,13 @@ export const agent = async (req, res) => {
         })
 
         const response = result?.aiResponse || "No response received from agent."
+
+        // store the message into redis also 
+        // await addMessage(conversationId, {
+        //     role: "assistant",
+        //     content: response,
+
+        // })
 
         // Save assistant message to chat service if conversationId is provided
         if (conversationId && conversationId !== "default-conv") {
