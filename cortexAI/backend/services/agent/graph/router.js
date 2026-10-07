@@ -43,12 +43,19 @@ User Query:
 ${state.prompt}
 `;
 
-    const response = await llm.invoke(prompt)
-    console.log(response)
-
-    return {
-        ...state,
-        agent: response.content.toLowerCase().trim()
+    try {
+        const response = await llm.invoke(routerPrompt)
+        console.log("Router decision:", response?.content)
+        const agentName = (response?.content || "chat").toLowerCase().trim()
+        return {
+            ...state,
+            agent: agentName
+        }
+    } catch (err) {
+        console.warn("Router LLM failed, defaulting to chat:", err.message)
+        return {
+            ...state,
+            agent: "chat"
+        }
     }
-
 }

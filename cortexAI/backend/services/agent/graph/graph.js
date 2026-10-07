@@ -1,5 +1,5 @@
 import { agentState } from "./state.js";
-import { StateGraph } from "@langchain/core/graphs";
+import { StateGraph } from "@langchain/langgraph";
 import { router } from "./router.js";
 import { chatAgent } from "../agents/chat.agent.js";
 import { imageGenAgent } from "../agents/image.agent.js";
@@ -22,25 +22,25 @@ workflow.addNode("ppt", pptAgent);
 
 workflow.addEdge("__start__", "router");
 workflow.addConditionalEdges("router", (state) => {
-    switch (state.agent) {
-        case "Chat":
-            return "chat" // returning node name 
-        case "Image":
+    const agent = (state.agent || "chat").toLowerCase().trim()
+    switch (agent) {
+        case "chat":
+            return "chat"
+        case "image":
             return "image"
-        case "Search":
+        case "search":
             return "search"
-        case "PDF":
+        case "pdf":
             return "pdf"
-        case "PPT":
+        case "ppt":
             return "ppt"
         case "coding":
+        case "code":
             return "code"
-
         default:
             return "chat"
     }
 }, {
-    // we write the node name , what is return and maped there 
     chat: "chat",
     image: "image",
     search: "search",
@@ -51,7 +51,7 @@ workflow.addConditionalEdges("router", (state) => {
 
 workflow.addEdge("chat", "__end__")
 workflow.addEdge("image", "__end__")
-workflow.addEdge("search", "chat")
+workflow.addEdge("search", "__end__")
 workflow.addEdge("pdf", "__end__")
 workflow.addEdge("ppt", "__end__")
 workflow.addEdge("code", "__end__")

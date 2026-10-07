@@ -1,36 +1,57 @@
+import "dotenv/config"
 import { ChatGroq } from "@langchain/groq"
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
 
-const groq = new ChatGroq({
-    model: "openai/gpt-oss-120b",
-    temperature: 0,
-    maxTokens: undefined,
-    maxRetries: 2,
-    // other params...
-})
+let groqInstance = null
+let geminiInstance = null
 
-const gemini = new ChatGoogleGenerativeAI({
-    model: "gemini-2.5-flash",
-    temperature: 0,
-    maxTokens: undefined,
-    maxRetries: 2,
-    // other params...
-})
+const getGroq = () => {
+    if (!groqInstance) {
+        const apiKey = process.env.GROQ_API_KEY
+        if (!apiKey) {
+            console.warn("GROQ_API_KEY is not defined in environment variables!")
+        }
+        groqInstance = new ChatGroq({
+            apiKey: apiKey,
+            model: "llama-3.3-70b-versatile",
+            temperature: 0.2,
+            maxRetries: 2,
+        })
+    }
+    return groqInstance
+}
+
+const getGemini = () => {
+    if (!geminiInstance) {
+        const apiKey = process.env.GOOGLE_API_KEY
+        if (!apiKey) {
+            console.warn("GOOGLE_API_KEY is not defined in environment variables!")
+        }
+        geminiInstance = new ChatGoogleGenerativeAI({
+            apiKey: apiKey,
+            model: "gemini-2.0-flash",
+            temperature: 0.2,
+            maxRetries: 2,
+        })
+    }
+    return geminiInstance
+}
+
 export const getModel = async (agent) => {
     switch (agent) {
         case "chat":
-            return groq
+            return getGroq()
         case "image":
-            return gemini
+            return getGemini()
         case "pdf":
-            return gemini
+            return getGemini()
         case "ppt":
-            return gemini
+            return getGemini()
         case "code":
-            return gemini
+            return getGemini()
         case "search":
-            return groq
+            return getGroq()
         default:
-            return groq
+            return getGroq()
     }
 }

@@ -7,5 +7,6 @@ export const proxywithheader = (serviceUrl) => proxy(serviceUrl, {
             // request already have the user
             proxyReqOpts.headers["x-user-id"] = srcReq.user.userId
         }
+        return proxyReqOpts;
     }
-})
+}) 

@@ -1,9 +1,5 @@
-import React, { useState } from "react";
-import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "../utils/firebase";
-import api from "../utils/axios";
-import Home from "./pages/home.jsx"
-import { useEffect } from "react";
+import React, { useEffect } from "react";
+import Home from "./pages/home.jsx";
 import getCurrentUser from "./features/getCurrentUser";
 import { useDispatch } from "react-redux";
 import { setUserData } from "./redux/userSlice";
