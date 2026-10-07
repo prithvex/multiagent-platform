@@ -11,10 +11,10 @@ app.use(express.json())
 app.use("/", router)
 
 app.get("/", (req, res) => {
-    res.json({ "message": "Hello from chat Service" })
+    res.json({ "message": "Hello from Agent" })
 })
 
 app.listen(port, () => {
-    console.log(`chat Started at port ${port}`)
+    console.log(`Agent Started at port ${port}`)
     connctDb() // calling the connectDb 
 })

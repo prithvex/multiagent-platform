@@ -25,9 +25,8 @@ app.use(cookieParser())
 
 // Proxy /auth requests to the auth service
 app.use("/api/auth", proxy(process.env.AUTH_SERVICE));
-
 app.use("/api/chat", protect, proxywithheader(process.env.CHAT_SERVICE));
-
+app.use("/api/agent", protect, proxywithheader(process.env.AGENT_SERVICE));
 
 app.get("/api/me", protect, getCurrentUser)
 
