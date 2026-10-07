@@ -32,19 +32,17 @@ export const agent = async (req, res) => {
 
         const response = result?.aiResponse || "No response received from agent."
 
-        // store the message into redis also 
-        // await addMessage(conversationId, {
-        //     role: "assistant",
-        //     content: response,
-
-        // })
-
-        // add all messages into redis 
-        await addMessage(conversationId, {
-            role: "user",
-            content: prompt,
-
-        })
+        // Cache user and assistant messages in memory
+        if (conversationId && conversationId !== "default-conv") {
+            await addMessage(conversationId, {
+                role: "user",
+                content: prompt,
+            })
+            await addMessage(conversationId, {
+                role: "assistant",
+                content: response,
+            })
+        }
 
         // Save assistant message to chat service if conversationId is provided
         if (conversationId && conversationId !== "default-conv") {
@@ -61,7 +59,9 @@ export const agent = async (req, res) => {
 
         return res.status(200).json({
             response: response,
-            agent: result?.agent || "chat"
+            agent: result?.agent || "chat",
+            searchResults: result?.searchResults || [],
+            images: result?.images || []
         })
 
     } catch (error) {

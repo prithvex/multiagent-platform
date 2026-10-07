@@ -1,28 +1,23 @@
-import { getModel } from "../config/llmModels.js"
+import { searchTool } from "../config/tavily.js";
 
 export const searchAgent = async (state) => {
     try {
-        const llm = await getModel("search")
-        const prompt = "You are cortexAI Deep Research & Web Agent. Synthesize information, cite key insights, perform structured analysis, and provide accurate, factual summaries."
-        const response = await llm.invoke([
-            {
-                role: "system",
-                content: prompt,
-            },
-            {
-                role: "human",
-                content: state.prompt
-            }
-        ])
+        const results = await searchTool.invoke({
+            query: state.prompt,
+        });
+        console.log(results);
+
         return {
             ...state,
-            aiResponse: response.content
-        }
+            searchResults: results,
+            images: results?.images || [],
+        };
     } catch (error) {
-        console.error("searchAgent error:", error)
+        console.error("searchAgent error:", error);
         return {
             ...state,
-            aiResponse: `Error in searchAgent: ${error.message}`
-        }
+            searchResults: [],
+            images: [],
+        };
     }
-}
+};

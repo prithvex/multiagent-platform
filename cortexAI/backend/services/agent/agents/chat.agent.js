@@ -1,44 +1,51 @@
-import { SystemMessage } from "@langchain/core/messages"
+import { SystemMessage, HumanMessage, AIMessage } from "@langchain/core/messages"
 import { getModel } from "../config/llmModels.js"
 import { getMemory } from "../config/memory.js"
 
 export const chatAgent = async (state) => {
-    const llm = await getModel("chat")
+    try {
+        const llm = await getModel("chat")
 
-    const history = await getMemory(state.conversationId)
-    const systemPrompt = `
-    You are a ${state.agent}.`
+        const history = (await getMemory(state.conversationId)) || []
+        const systemPrompt = `You are cortexAI, an intelligent, helpful, and versatile AI assistant.`
 
-    const messages = [
-        new SystemMessage(systemPrompt),
+        const messages = [
+            new SystemMessage(systemPrompt),
+        ]
 
-    ]
-
-    history.forEach(msg => {
-        if (msg.role == "user") {
-            messages.push(new HumanMessage(msg.content))
+        if (Array.isArray(history)) {
+            history.forEach(msg => {
+                if (msg.role === "user") {
+                    messages.push(new HumanMessage(msg.content))
+                } else if (msg.role === "assistant") {
+                    messages.push(new AIMessage(msg.content))
+                }
+            })
         }
-        else if (msg.role == "assistant") {
-            messages.push(new AIMessage(msg.content))
-        }
-    });
 
-    //push the prompt 
-    messages.push(new HumanMessage(state.prompt))
-    console.log(messages)
+        // Check if searchResults are present in state (from searchAgent)
+        let userContent = state.prompt;
+        if (state.searchResults && (Array.isArray(state.searchResults) ? state.searchResults.length > 0 : Object.keys(state.searchResults).length > 0)) {
+            const searchContent = typeof state.searchResults === "string"
+                ? state.searchResults
+                : JSON.stringify(state.searchResults, null, 2);
 
-    const response = await llm.invoke([
-        {
-            "role": "system",
-            "content": systemPrompt,
-        },
-        {
-            "role": "human",
-            "content": state.prompt
+            userContent = `User Question: ${state.prompt}\n\nWeb Search Results:\n${searchContent}\n\nPlease synthesize a comprehensive, accurate, and up-to-date response based on the search results above. Include citations and markdown links where helpful.`;
         }
-    ])
-    return {
-        ...state,
-        aiResponse: response.content
+
+        // Push the current user prompt
+        messages.push(new HumanMessage(userContent))
+
+        const response = await llm.invoke(messages)
+        return {
+            ...state,
+            aiResponse: response.content
+        }
+    } catch (error) {
+        console.error("chatAgent error:", error)
+        return {
+            ...state,
+            aiResponse: `Error in chatAgent: ${error.message}`
+        }
     }
 }   

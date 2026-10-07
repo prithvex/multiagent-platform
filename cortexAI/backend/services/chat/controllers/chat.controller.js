@@ -88,7 +88,8 @@ export const saveMessage = async (req, res) => {
         const message = await Message.create({
             conversationId: conversationId,
             role: role,
-            content: content
+            content: content,
+            images: images
         })
         return res.status(201).json({ message: message })
     } catch (error) {
