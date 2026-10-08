@@ -55,7 +55,7 @@ Your final image-generation instruction should be concise enough for an image mo
         const buffer = Buffer.from(imageRes.data)
         const filename = `${Date.now()}.png`
 
-        const downloadUrl = await getfroms3(filename, 24 * 60 * 60);
+        const downloadUrl = await getfroms3(filename, 60 * 10);
 
 
         return {
