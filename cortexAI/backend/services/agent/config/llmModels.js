@@ -1,9 +1,11 @@
 import "dotenv/config"
 import { ChatGroq } from "@langchain/groq"
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
+import { ChatOpenRouter } from "@langchain/openrouter"
 
-let groqInstance = null
-let geminiInstance = null
+let groqInstance;
+let geminiInstance;
+let deepSeekInstance;
 
 const getGroq = () => {
     if (!groqInstance) {
@@ -37,6 +39,24 @@ const getGemini = () => {
     return geminiInstance
 }
 
+const getDeepSeek = () => {
+    if (!deepSeekInstance) {
+        const apiKey = process.env.OPENROUTER_API_KEY
+        if (!apiKey) {
+            console.warn("OPENROUTER_API_KEY is not defined in environment variables!")
+        }
+        deepSeekInstance = new ChatOpenRouter({
+            apiKey: apiKey,
+            model: "deepseek-chat/deepseek-chat",
+            temperature: 0.2,
+            maxTokens: 2500,
+            maxRetries: 2,
+        })
+    }
+    return deepSeekInstance
+}
+
+
 export const getModel = async (agent) => {
     switch (agent) {
         case "chat":
@@ -48,7 +68,7 @@ export const getModel = async (agent) => {
         case "ppt":
             return getGemini()
         case "code":
-            return getGemini()
+            return getDeepSeek()
         case "search":
             return getGroq()
         default:

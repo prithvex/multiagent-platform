@@ -61,7 +61,8 @@ export const agent = async (req, res) => {
             response: response,
             agent: result?.agent || "chat",
             searchResults: result?.searchResults || [],
-            images: result?.images || []
+            images: result?.images || [],
+            artifacts: result?.artifacts || [],
         })
 
     } catch (error) {
