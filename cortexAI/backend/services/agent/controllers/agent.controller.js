@@ -2,7 +2,7 @@ import axios from "axios"
 import { graph } from "../graph/graph.js"
 import { addMessage } from "../config/memory.js"
 
-export const agent = async (req, res) => {
+export const agent = async (req, res, next) => {
     try {
         const { prompt, conversationId } = req.body
         //get the file 
@@ -69,7 +69,6 @@ export const agent = async (req, res) => {
         })
 
     } catch (error) {
-        console.error("agent controller error:", error)
-        return res.status(500).json({ message: `agent error: ${error.message || error}` })
+        next(error)
     }
 }

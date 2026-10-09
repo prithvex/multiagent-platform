@@ -1,10 +1,14 @@
 import { SystemMessage } from "@langchain/core/messages"
 import { getModel } from "../config/llmModels.js"
 import fs from "fs"
+import { checkAgentLimit } from "../config/agentLimit.js"
 
 export const imgAnalyser = async (state) => {
+
     try {
 
+        // add check here
+        await checkAgentLimit(state.userId, "image")
         const llm = await getModel("imageAnalyser")
         const imageBuffer = fs.readFileSync(state.file.path)
         //convert the imageBuffer to base64

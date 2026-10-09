@@ -1,7 +1,10 @@
 import { getModel } from "../config/llmModels.js"
 
 export const pdfAgent = async (state) => {
+
     try {
+        // add check here
+        await checkAgentLimit(state.userId, "pdf")
         const llm = await getModel("pdf")
         const prompt = `
     You are cortexAI PDF & Document Specialist. Assist with document structure, report synthesis, data extraction, and executive summaries.

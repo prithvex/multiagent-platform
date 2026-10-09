@@ -2,6 +2,9 @@ import { getModel } from "../config/llmModels.js"
 
 export const codeAgent = async (state) => {
     try {
+        // add check here
+        await checkAgentLimit(state.userId, "code")
+
         const intentLLM = await getModel("intent")
         const llm = await getModel("code")
         const intentResponse = await intentLLM.invoke(`You are an intent classifier.

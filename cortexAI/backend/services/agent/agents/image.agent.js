@@ -1,7 +1,10 @@
 import { getModel } from "../config/llmModels.js"
 
 export const imageGenAgent = async (state) => {
+
     try {
+        // add check here
+        await checkAgentLimit(state.userId, "image")
         const llm = await getModel("image")
         const response = await llm.invoke(`
  You are an expert AI image-generation assistant.

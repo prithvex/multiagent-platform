@@ -2,10 +2,13 @@ import { SystemMessage, HumanMessage, AIMessage } from "@langchain/core/messages
 import { getModel } from "../config/llmModels.js"
 import { getMemory } from "../config/memory.js"
 import { deductCredits } from "../utils/deductCredits.js"
+import { checkAgentLimit } from "../config/agentLimit.js"
 
 export const chatAgent = async (state) => {
 
     try {
+        // add check here
+        await checkAgentLimit(state.userId, "chat")
 
         const llm = await getModel("chat")
 

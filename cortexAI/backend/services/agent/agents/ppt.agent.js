@@ -1,7 +1,11 @@
 import { getModel } from "../config/llmModels.js"
+import { checkAgentLimit } from "../config/agentLimit.js"
 
 export const pptAgent = async (state) => {
+
   try {
+    // add check here
+    await checkAgentLimit(state.userId, "ppt")
     const llm = await getModel("ppt")
     const prompt = `
         You are an expert in presentation design and storytelling. Your goal is to transform the user's text into a compelling, structured PowerPoint presentation outline.

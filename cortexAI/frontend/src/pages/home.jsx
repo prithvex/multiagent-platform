@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../../utils/firebase";
 import api from "../../utils/axios";
@@ -7,13 +7,12 @@ import { setUserData } from "../redux/userSlice";
 import {
   setConversation,
   setSelectedConversation,
-  addConversation,
 } from "../redux/conversationSlice";
 import { getconversation } from "../features/getConversations";
-import { createconversation } from "../features/createConversation";
-import Sidebar from "../components/sidebar.jsx";
-import ChatArea from "../components/chatArea.jsx";
-import Artifact from "../components/artifact.jsx";
+import SideBar from "../components/SideBar.jsx";
+import ChatArea from "../components/ChatArea.jsx";
+import Artifact from "../components/Artifact.jsx";
+import BillingDrawer from "../components/BillingDrawer.jsx";
 
 function Home() {
   const { userData } = useSelector((state) => state.user);
@@ -22,6 +21,7 @@ function Home() {
   // App UI State matching ChatGPT: Sidebar initially closed
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isArtifactOpen, setIsArtifactOpen] = useState(false);
+  const [isBillingOpen, setIsBillingOpen] = useState(false);
   const [activeArtifact, setActiveArtifact] = useState({
     title: "AppPreview.jsx",
     language: "jsx",
@@ -131,10 +131,11 @@ export default function InteractiveCounter() {
       {userData ? (
         <div className="flex w-full h-full gap-2 sm:gap-2.5 overflow-hidden transition-all duration-300">
           {/* Panel 1 (Left): Sidebar with toggle state */}
-          <Sidebar
+          <SideBar
             isOpen={isSidebarOpen}
             onToggle={() => setIsSidebarOpen(false)}
             onNewChat={handleCreateNewChat}
+            onOpenBilling={() => setIsBillingOpen(true)}
           />
 
           {/* Panel 2 (Center): Chat Area */}
@@ -149,6 +150,7 @@ export default function InteractiveCounter() {
               setActiveArtifact(artifactData);
               setIsArtifactOpen(true);
             }}
+            onOpenBilling={() => setIsBillingOpen(true)}
           />
 
           {/* Panel 3 (Right): Artifact Canvas */}
@@ -158,6 +160,12 @@ export default function InteractiveCounter() {
               onClose={() => setIsArtifactOpen(false)}
             />
           )}
+
+          {/* Subscription & Billing Drawer */}
+          <BillingDrawer
+            isOpen={isBillingOpen}
+            onClose={() => setIsBillingOpen(false)}
+          />
         </div>
       ) : (
         /* Minimal Black and Grey Login Modal */
