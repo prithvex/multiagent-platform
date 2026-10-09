@@ -5,14 +5,12 @@ import { addMessage } from "../config/memory.js"
 export const agent = async (req, res) => {
     try {
         const { prompt, conversationId } = req.body
-
-
+        //get the file 
+        const file = req.file
 
         if (!prompt) {
             return res.status(400).json({ message: "Prompt is required" })
         }
-
-
 
 
         // Save user message to chat service if conversationId is provided
@@ -32,6 +30,7 @@ export const agent = async (req, res) => {
             prompt: prompt,
             conversationId: conversationId || "default-conv",
             userId: req.userId,
+            file: file
         })
 
         const response = result?.aiResponse || "No response received from agent."

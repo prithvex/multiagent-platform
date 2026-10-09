@@ -67,6 +67,10 @@ export const getModel = async (agent) => {
             return getGemini()
         case "ppt":
             return getGemini()
+        case "imageAnalyser":
+            return getGemini()
+        case "pdfRAG":
+            return getGemini()
         case "code":
             return getDeepSeek()
         case "search":
