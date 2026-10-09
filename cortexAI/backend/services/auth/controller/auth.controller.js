@@ -73,3 +73,98 @@ export const logOut = async (req, res) => {
         });
     }
 }
+
+// upateuser controller
+
+export const updateUserPayment = async (req, res) => {
+    try {
+        const userId = req.headers["x-user-id"]
+        const { plan, credits, totalCredits, planExpiresAt } = req.body
+        const user = await User.findByIdAndUpdate(userId, {
+            plan,
+            credits,
+            totalCredits,
+            planExpiresAt
+        }, { new: true })
+
+        if (!user) {
+            return res.status(400).json({ message: "user not found" })
+        }
+        user.plan = plan
+        user.credits += credits
+        user.totalCredits += credits
+        user.planExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        await user.save()
+
+        //find the session_id with cookie
+        const session_id = req.cookie?.session
+        //store the session id into redis
+        await redis.set(`session -${session_id}`, JSON.stringify({
+            userId: user._id,
+            name: user.name,
+            email: user.email,
+            avatar: user.avatar,
+            plan: user.plan,
+            credits: user.credits,
+            totalCredits: user.totalCredits,
+            planExpiresAt: user.planExpiresAt
+        }), "EX", 7 * 24 * 60 * 60)
+
+        return res.status(200).json({ message: "user updated successfully" })
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to update user",
+            error
+        })
+    }
+}
+
+export const deductCredits = async (req, res) => {
+    try {
+        const { userId, credits } = req.body
+        //cost id per agent
+        const COST = {
+            chat: 1,
+            search: 5,
+            coding: 10,
+            pdf: 10,
+            ppt: 10,
+            image: 10,
+        }
+        const user = await User.findById(userId)
+        if (!user) {
+            return res.status(400).json({ message: "user not found" })
+        }
+
+        const requiredCredits = COST[agent]
+        if (!requiredCredits) {
+            return res.status(400).json({ message: "agent not found" })
+        }
+        if (user.credits < requiredCredits) {
+            return res.status(400).json({ message: "Insufficient credits" })
+        }
+        user.credits -= requiredCredits
+        await user.save()
+
+        //update the session 
+        const session_id = req.cookie?.session
+        await redis.set(`session -${session_id}`, JSON.stringify({
+            userId: user._id,
+            name: user.name,
+            email: user.email,
+            avatar: user.avatar,
+            plan: user.plan,
+            credits: user.credits,
+            totalCredits: user.totalCredits,
+            planExpiresAt: user.planExpiresAt
+        }), "EX", 7 * 24 * 60 * 60)
+
+        return res.status(200).json({ message: "Credits deducted successfully", credits: user.credits })
+
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to deduct credits",
+            error
+        })
+    }
+}

@@ -5,6 +5,9 @@ import { addMessage } from "../config/memory.js"
 export const agent = async (req, res) => {
     try {
         const { prompt, conversationId } = req.body
+
+
+
         if (!prompt) {
             return res.status(400).json({ message: "Prompt is required" })
         }
@@ -28,6 +31,7 @@ export const agent = async (req, res) => {
         const result = await graph.invoke({
             prompt: prompt,
             conversationId: conversationId || "default-conv",
+            userId: req.userId,
         })
 
         const response = result?.aiResponse || "No response received from agent."

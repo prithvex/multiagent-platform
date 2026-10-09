@@ -26,6 +26,26 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    plan: {
+      type: String,
+      default: "free"
+    },
+    credits: {
+      type: Number,
+      default: 100
+    },
+    totalCredits: {
+      type: Number,
+      default: 100
+    },
+    planExpiresAt: {
+      type: Date,
+      default: null
+    },
+
+
+
+
   },
   {
     timestamps: true,

@@ -30,6 +30,7 @@ app.use(cookieParser())
 app.use("/api/auth", proxy(process.env.AUTH_SERVICE));
 app.use("/api/chat", protect, proxywithheader(process.env.CHAT_SERVICE));
 app.use("/api/agent", protect, proxywithheader(process.env.AGENT_SERVICE));
+app.use("/api/billing", protect, proxywithheader(process.env.BILLING_SERVICE));
 
 app.get("/api/me", protect, getCurrentUser)
 
